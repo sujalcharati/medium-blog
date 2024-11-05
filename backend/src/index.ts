@@ -3,7 +3,9 @@ import { PrismaClient } from '@prisma/client/edge'
 import { withAccelerate } from '@prisma/extension-accelerate'
 import { sign  } from 'hono/jwt'
 const app = new Hono()
-
+app.use('/api/v1/blog/*', async (c, next) => {
+  await next()
+})
 
 app.post('/api/v1/singup', async(c) => {
   const prisma = new PrismaClient({
@@ -19,17 +21,29 @@ app.post('/api/v1/singup', async(c) => {
     },
   })
   //@ts-ignore
-  const token = await sign({
-    id: user.id}, c.env.JWT_SECRET)
-    
-  return c.json({
-    jwt:token
-  })
+  const jwt = await sign({ id: user.id }, c.env.JWT_SECRET);
+	return c.json({ jwt });})
 
-})
-app.post('/api/v1/singin', (c) => {
-  return c.text('Hello Hono!')
-})
+app.post('/api/v1/singin', async (c) => {
+  const prisma = new PrismaClient({
+    //@ts-ignore
+		datasourceUrl: c.env.DATABASE_URL	,
+	}).$extends(withAccelerate());
+
+	const body = await c.req.json();
+	const user = await prisma.user.findUnique({
+		where: {
+			email: body.email
+		}
+	});
+
+	if (!user) {
+		c.status(403);
+		return c.json({ error: "user not found" });
+	}
+//@ts-ignore
+	const jwt = await sign({ id: user.id }, c.env.JWT_SECRET);
+	return c.json({ jwt });})
 app.post('/api/v1/blog', (c) => {
   return c.text('Hello Hono!')
 })
