@@ -27,7 +27,7 @@ blogRouter.use('blog/*', async (c, next) => {
     }
   
   })
-blogRouter.post('/api/v1/blog', async(c) => {
+blogRouter.post('/blog', async(c) => {
   const body = await c.req.json();
   const prisma = new PrismaClient({
     //@ts-ignore
